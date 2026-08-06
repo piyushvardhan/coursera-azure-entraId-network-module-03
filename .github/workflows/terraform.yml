@@ -42,52 +42,74 @@
 #       with:
 #         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-name: 'Terraform'
+name: 'Infrastructure as Code (IaC)'
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
+    paths: ['terraform/**']
   pull_request:
+    branches: [ "main", "develop" ]
+    paths: ['terraform/**']
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   terraform:
-    name: 'Terraform'
+    name: 'Infrastructure as Code (IaC) - Terraform'
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'stage' || 'development' }}
+    env:
+      TF_LOG: INFO
+      ENV_DIR: ${{ (github.base_ref == 'main' || github.ref_name == 'main')  && 'stage' || 'development' }}
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: true
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
       run:
         shell: bash
+        working-directory: ./terraform/environments/${{ env.ENV_DIR }}
 
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+
+  # Configure AWS credentials to allow Terraform to assume a role in the target AWS account
+    - name : Configure AWS Credentials
+      if: ${{ (github.base_ref == 'develop' || github.ref_name == 'develop') }}
+      uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+      with:
+        role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
 
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e #v4.0.1
       with:
-        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+        #cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+        terraform_version: 1.15.6
 
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
       run: terraform init
 
-    # Checks that all Terraform configuration files adhere to a canonical format
+          # Checks that all Terraform configuration files adhere to a canonical format
     - name: Terraform Format
       run: terraform fmt -check
-
     # Generates an execution plan for Terraform
     - name: Terraform Plan
-      run: terraform plan -input=false
+      run: terraform plan -out=tfplan && terraform show -json tfplan | jq . > tfplan-${{ env.ENV_DIR }}.json
 
       # On push to "main", build or change infrastructure according to Terraform configuration files
       # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
-      run: terraform apply -auto-approve -input=false
+    #- name: Terraform Apply
+    #  if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
+    #  run: terraform apply -auto-approve -input=false
