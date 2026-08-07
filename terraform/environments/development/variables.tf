@@ -21,10 +21,10 @@ variable "public_ip_address_id" {
 
 variable "vnet_name" {
   description = "The name of the Virtual Network."
-  type = string
+  type        = string
 }
 
 variable "public_ip_name" {
   description = "The name of the Public IP address."
-  type = string
+  type        = string
 }
