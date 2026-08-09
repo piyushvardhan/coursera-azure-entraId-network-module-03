@@ -107,6 +107,8 @@ jobs:
       run: terraform fmt -check
     # Generates an execution plan for Terraform
     - name: Terraform Plan
+      env:
+        ARM_PROVIDER_ENHANCED_VALIDATION: "false"
       run: terraform plan -input=false -out=tfplan && terraform show -json tfplan | jq . > tfplan-${{ env.ENV_DIR }}.json
 
       # On push to "main", build or change infrastructure according to Terraform configuration files
