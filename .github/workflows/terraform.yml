@@ -48,25 +48,25 @@ jobs:
 
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
-      if: github.base_ref == 'develop' || github.ref_name == 'develop'
+      if: ${{ (github.base_ref == 'develop' || github.ref_name == 'develop') }}
       uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e #v4.0.1
       with:
         terraform_version: 1.15.6
 
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
-      if: github.base_ref == 'develop' || github.ref_name == 'develop'
+      if: ${{ (github.base_ref == 'develop' || github.ref_name == 'develop') }}
       run: terraform init
 
     # Checks that all Terraform configuration files adhere to a canonical format
     - name: Terraform Format
-      if: github.base_ref == 'develop' || github.ref_name == 'develop'
+      if: ${{ (github.base_ref == 'develop' || github.ref_name == 'develop') }}
       run: terraform fmt -check
 
     # Generates an execution plan for Terraform
     - name: Terraform Plan
       env:
         ARM_PROVIDER_ENHANCED_VALIDATION: "false"
-      if: github.base_ref == 'develop' || github.ref_name == 'develop'
+      if: ${{ (github.base_ref == 'develop' || github.ref_name == 'develop') }}
       run: terraform plan -input=false -out=tfplan && terraform show -json tfplan | jq . > tfplan-${{ env.ENV_DIR }}.json
 
