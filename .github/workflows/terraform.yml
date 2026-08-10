@@ -59,6 +59,7 @@ permissions:
 jobs:
   terraform:
     name: 'Infrastructure as Code (IaC) - Terraform'
+    if: github.base_ref == 'develop' || github.ref_name == 'develop'
     runs-on: ubuntu-latest
     environment: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'stage' || 'development' }}
     env:
