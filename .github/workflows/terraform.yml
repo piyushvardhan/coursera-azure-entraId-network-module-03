@@ -2,10 +2,14 @@ name: 'Infrastructure as Code (IaC)'
 on:
   push:
     branches: [ "main", "develop" ]
-    paths: ['terraform/**']
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform.yml'
   pull_request:
     branches: [ "main", "develop" ]
-    paths: ['terraform/**']
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform.yml'
 
 permissions:
   contents: read
