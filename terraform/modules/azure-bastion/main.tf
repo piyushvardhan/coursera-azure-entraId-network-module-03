@@ -1,0 +1,11 @@
+resource "azurerm_bastion_host" "bastion" {
+  name                = var.bastion_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  sku                 = "Standard" # Explicitly updated for assignment
+  ip_configuration {
+    name                 = "bastion-ip-config"
+    subnet_id            = var.subnet_id
+    public_ip_address_id = var.public_ip_address_id
+  }
+}
