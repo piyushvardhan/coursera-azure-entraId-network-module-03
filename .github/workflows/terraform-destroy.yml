@@ -1,0 +1,47 @@
+name: "Terraform Teardown (Destroy Infra)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type "DESTROY" to confirm teardown'
+        required: true
+        default: 'NO'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  destroy:
+    name: "Teardown Infrastructure"
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirmation == 'DESTROY'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (S3 Remote State)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: eu-north-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.6
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform/environments/development
+
+      - name: Terraform Destroy
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_PROVIDER_ENHANCED_VALIDATION: "false"
+        run: terraform destroy -auto-approve
+        working-directory: terraform/environments/development
